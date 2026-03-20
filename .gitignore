@@ -1,0 +1,14 @@
+.env
+
+backend/target/
+backend/.idea/
+backend/*.iml
+
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.idea/
+
+.vscode/
+.idea/
+*.iml

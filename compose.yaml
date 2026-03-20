@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: task-manager-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend-dev:
+    image: maven:3.9.11-eclipse-temurin-21
+    container_name: task-manager-backend-dev
+    working_dir: /workspace
+    volumes:
+      - ./backend:/workspace
+      - maven_cache:/root/.m2
+    ports:
+      - "${BACKEND_PORT}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    tty: true
+    stdin_open: true
+    command: bash
+
+  frontend-dev:
+    image: node:22-bookworm
+    container_name: task-manager-frontend-dev
+    working_dir: /workspace
+    volumes:
+      - ./frontend:/workspace
+    ports:
+      - "${FRONTEND_PORT}:4200"
+    tty: true
+    stdin_open: true
+    command: bash
+
+volumes:
+  postgres_data:
+  maven_cache:
