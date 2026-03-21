@@ -18,7 +18,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-    show-sql: true
+    show-sql: false
 
   jackson:
     time-zone: UTC
@@ -40,6 +40,8 @@ springdoc:
     operationsSorter: method
 
 logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%logger{36}] — %msg%n"
   level:
     org.springframework.security: INFO
-    org.hibernate.SQL: INFO
+    org.hibernate.SQL: DEBUG

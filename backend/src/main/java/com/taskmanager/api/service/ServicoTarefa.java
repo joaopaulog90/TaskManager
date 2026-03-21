@@ -20,6 +20,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,7 @@ public class ServicoTarefa {
         this.repositorioUsuario = repositorioUsuario;
     }
 
+    @CacheEvict(value = "resumo-projeto", key = "#idProjeto")
     public RespostaTarefa criar(Long idProjeto, RequisicaoTarefa requisicao, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
         Projeto projeto = buscarProjetoOuLancar(idProjeto);
@@ -125,6 +128,7 @@ public class ServicoTarefa {
                 .toList();
     }
 
+    @CacheEvict(value = "resumo-projeto", key = "#idProjeto")
     public RespostaTarefa atualizar(Long idProjeto, Long idTarefa, RequisicaoAtualizacaoTarefa requisicao, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
         exigirMembro(idProjeto, usuarioAtual.getId());
@@ -192,6 +196,7 @@ public class ServicoTarefa {
         return paraResposta(salva);
     }
 
+    @CacheEvict(value = "resumo-projeto", key = "#idProjeto")
     public void deletar(Long idProjeto, Long idTarefa, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
         exigirMembro(idProjeto, usuarioAtual.getId());
@@ -201,6 +206,7 @@ public class ServicoTarefa {
         repositorioTarefa.delete(tarefa);
     }
 
+    @Cacheable(value = "resumo-projeto", key = "#idProjeto")
     @Transactional(readOnly = true)
     public RespostaResumoTarefa resumo(Long idProjeto, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
