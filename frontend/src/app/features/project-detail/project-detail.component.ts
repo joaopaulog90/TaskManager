@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DragDropModule, CdkDragDrop, transferArrayItem, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ServicoProjeto } from '../../core/services/project.service';
 import { ServicoTarefa } from '../../core/services/task.service';
 import { ServicoUsuario } from '../../core/services/user.service';
@@ -14,15 +15,19 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
 @Component({
   selector: 'app-project-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   template: `
-    <div style="max-width:1100px;margin:0 auto;padding:2rem;">
+    <div style="max-width:1200px;margin:0 auto;padding:2rem;">
 
       <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
         <button (click)="voltar()" style="padding:0.5rem 1rem;background:#666;color:white;border:none;border-radius:4px;cursor:pointer;">← Projetos</button>
         <h1 style="margin:0;">{{ projeto?.nome }}</h1>
         <span style="color:#666;font-size:0.9rem;">{{ projeto?.descricao }}</span>
         <div style="flex:1;"></div>
+        <button (click)="visao = visao === 'lista' ? 'board' : 'lista'"
+          style="padding:0.5rem 1rem;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;">
+          {{ visao === 'lista' ? 'Board' : 'Lista' }}
+        </button>
         <button *ngIf="ehAdmin" (click)="alternarMembros()"
           [style.background]="mostrarMembros ? '#1976d2' : '#757575'"
           style="padding:0.5rem 1rem;color:white;border:none;border-radius:4px;cursor:pointer;">
@@ -33,46 +38,29 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
       <!-- PAINEL DE MEMBROS (toggle) -->
       <div *ngIf="mostrarMembros" style="background:white;padding:1.5rem;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.1);margin-bottom:1.5rem;">
         <h3 style="margin-top:0;margin-bottom:1rem;">Membros do Projeto</h3>
-
-        <div *ngIf="erroMembro" style="background:#fee;color:#c00;padding:0.75rem;border-radius:4px;margin-bottom:1rem;font-size:0.875rem;">
-          {{ erroMembro }}
-        </div>
-
+        <div *ngIf="erroMembro" style="background:#fee;color:#c00;padding:0.75rem;border-radius:4px;margin-bottom:1rem;font-size:0.875rem;">{{ erroMembro }}</div>
         <div style="display:flex;gap:2rem;flex-wrap:wrap;">
           <div style="flex:1;min-width:300px;">
             <h4 style="margin-top:0;color:#388e3c;">No projeto</h4>
-            <div *ngFor="let membro of membros"
-              style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;">
+            <div *ngFor="let membro of membros" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;">
               <div>
                 <span style="font-weight:500;">{{ membro.nomeUsuario }}</span>
                 <span style="font-size:0.8rem;color:#999;margin-left:0.5rem;">{{ membro.emailUsuario }}</span>
-                <span [style.background]="membro.perfil === 'ADMIN' ? '#1976d2' : '#757575'"
-                  style="border-radius:12px;padding:0.15rem 0.4rem;font-size:0.65rem;color:white;font-weight:600;margin-left:0.5rem;">
-                  {{ membro.perfil }}
-                </span>
+                <span [style.background]="membro.perfil === 'ADMIN' ? '#1976d2' : '#757575'" style="border-radius:12px;padding:0.15rem 0.4rem;font-size:0.65rem;color:white;font-weight:600;margin-left:0.5rem;">{{ membro.perfil }}</span>
               </div>
-              <button *ngIf="membro.idUsuario !== projeto?.idProprietario"
-                (click)="removerMembro(membro.idUsuario)"
-                style="padding:0.2rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">
-                Remover
-              </button>
+              <button *ngIf="membro.idUsuario !== projeto?.idProprietario" (click)="removerMembro(membro.idUsuario)" style="padding:0.2rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Remover</button>
               <span *ngIf="membro.idUsuario === projeto?.idProprietario" style="font-size:0.7rem;color:#999;">dono</span>
             </div>
             <div *ngIf="membros.length === 0" style="color:#999;font-size:0.875rem;padding:0.5rem 0;">Nenhum membro.</div>
           </div>
-
           <div style="flex:1;min-width:300px;">
             <h4 style="margin-top:0;color:#1976d2;">Disponíveis para adicionar</h4>
-            <div *ngFor="let usuario of usuariosDisponiveis()"
-              style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;">
+            <div *ngFor="let usuario of usuariosDisponiveis()" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;">
               <div>
                 <span style="font-weight:500;">{{ usuario.nome }}</span>
                 <span style="font-size:0.8rem;color:#999;margin-left:0.5rem;">{{ usuario.email }}</span>
               </div>
-              <button (click)="adicionarMembroPorId(usuario.id)"
-                style="padding:0.2rem 0.5rem;background:#388e3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">
-                Adicionar
-              </button>
+              <button (click)="adicionarMembroPorId(usuario.id)" style="padding:0.2rem 0.5rem;background:#388e3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Adicionar</button>
             </div>
             <div *ngIf="usuariosDisponiveis().length === 0" style="color:#999;font-size:0.875rem;padding:0.5rem 0;">Todos os usuários já são membros.</div>
           </div>
@@ -86,9 +74,7 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
         </div>
       </div>
 
-      <div *ngIf="erroGlobal" style="background:#fee;color:#c00;padding:0.75rem;border-radius:4px;margin-bottom:1rem;font-size:0.875rem;">
-        {{ erroGlobal }}
-      </div>
+      <div *ngIf="erroGlobal" style="background:#fee;color:#c00;padding:0.75rem;border-radius:4px;margin-bottom:1rem;font-size:0.875rem;">{{ erroGlobal }}</div>
 
       <div style="background:white;padding:1.5rem;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.1);margin-bottom:1.5rem;">
         <h3 style="margin-top:0;">Nova Tarefa</h3>
@@ -98,10 +84,7 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
         </div>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem;">
           <select [(ngModel)]="novaPrioridade" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
-            <option value="CRITICAL">CRITICAL</option>
+            <option value="LOW">LOW</option><option value="MEDIUM">MEDIUM</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option>
           </select>
           <select [(ngModel)]="novoIdResponsavel" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
             <option [ngValue]="null">Sem responsável</option>
@@ -111,30 +94,22 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
             <label style="font-size:0.8rem;color:#666;">Prazo:</label>
             <input [(ngModel)]="novoPrazo" type="date" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;" />
           </div>
-          <button (click)="criarTarefa()" [disabled]="!novoTitulo.trim()" style="padding:0.5rem 1.5rem;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;">
-            Criar
-          </button>
+          <button (click)="criarTarefa()" [disabled]="!novoTitulo.trim()" style="padding:0.5rem 1.5rem;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;">Criar</button>
         </div>
       </div>
 
       <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
         <select [(ngModel)]="filtroStatus" (ngModelChange)="carregarTarefas()" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-          <option value="">Todos os status</option>
-          <option value="TODO">TODO</option>
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="DONE">DONE</option>
+          <option value="">Todos os status</option><option value="TODO">TODO</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option>
         </select>
         <select [(ngModel)]="filtroPrioridade" (ngModelChange)="carregarTarefas()" style="padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
-          <option value="">Todas as prioridades</option>
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
-          <option value="CRITICAL">CRITICAL</option>
+          <option value="">Todas as prioridades</option><option value="LOW">LOW</option><option value="MEDIUM">MEDIUM</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option>
         </select>
         <input [(ngModel)]="termoBusca" (input)="aoBuscar()" placeholder="Buscar tarefas..." style="flex:1;min-width:180px;padding:0.5rem;border:1px solid #ddd;border-radius:4px;" />
       </div>
 
-      <div style="background:white;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.1);overflow:hidden;">
+      <!-- VISÃO LISTA -->
+      <div *ngIf="visao === 'lista'" style="background:white;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.1);overflow:hidden;">
         <table style="width:100%;border-collapse:collapse;">
           <thead>
             <tr style="background:#f5f5f5;">
@@ -154,23 +129,17 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
                 <div *ngIf="tarefa.descricao" style="font-size:0.75rem;color:#999;">{{ tarefa.descricao }}</div>
               </td>
               <td style="padding:0.75rem 1rem;">
-                <select [(ngModel)]="tarefa.status" (ngModelChange)="alterarStatus(tarefa, $event)"
+                <select [ngModel]="tarefa.status" (ngModelChange)="alterarStatus(tarefa, $event)"
                   [style.background]="corStatus(tarefa.status)"
                   style="border:none;border-radius:12px;padding:0.25rem 0.5rem;font-size:0.75rem;color:white;cursor:pointer;font-weight:600;">
-                  <option value="TODO">TODO</option>
-                  <option value="IN_PROGRESS">IN_PROGRESS</option>
-                  <option value="DONE">DONE</option>
+                  <option value="TODO">TODO</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option>
                 </select>
               </td>
               <td style="padding:0.75rem 1rem;">
-                <span [style.background]="corPrioridade(tarefa.prioridade)"
-                  style="border-radius:12px;padding:0.25rem 0.5rem;font-size:0.75rem;color:white;font-weight:600;">
-                  {{ tarefa.prioridade }}
-                </span>
+                <span [style.background]="corPrioridade(tarefa.prioridade)" style="border-radius:12px;padding:0.25rem 0.5rem;font-size:0.75rem;color:white;font-weight:600;">{{ tarefa.prioridade }}</span>
               </td>
               <td style="padding:0.75rem 1rem;">
-                <select [ngModel]="tarefa.idResponsavel" (ngModelChange)="alterarResponsavel(tarefa, $event)"
-                  style="padding:0.25rem 0.4rem;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;">
+                <select [ngModel]="tarefa.idResponsavel" (ngModelChange)="alterarResponsavel(tarefa, $event)" style="padding:0.25rem 0.4rem;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;">
                   <option [ngValue]="null">—</option>
                   <option *ngFor="let membro of membros" [ngValue]="membro.idUsuario">{{ membro.nomeUsuario }}</option>
                 </select>
@@ -181,9 +150,7 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
                 <div *ngIf="tarefa.atualizadoEm !== tarefa.criadoEm" style="font-size:0.65rem;color:#bbb;">atualizado {{ tarefa.atualizadoEm | date:'dd/MM/yy HH:mm' }}</div>
               </td>
               <td style="padding:0.75rem 1rem;">
-                <button (click)="deletarTarefa(tarefa)" style="padding:0.25rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">
-                  Excluir
-                </button>
+                <button *ngIf="ehAdmin" (click)="deletarTarefa(tarefa)" style="padding:0.25rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Excluir</button>
               </td>
             </tr>
             <tr *ngIf="tarefas.length === 0">
@@ -193,7 +160,40 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
         </table>
       </div>
 
-      <div *ngIf="totalPaginas > 1" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem;">
+      <!-- VISÃO BOARD -->
+      <div *ngIf="visao === 'board'" style="display:flex;gap:1rem;min-height:400px;" cdkDropListGroup>
+        <div *ngFor="let coluna of colunas" style="flex:1;min-width:250px;">
+          <div [style.background]="corStatus(coluna.status)" style="padding:0.75rem 1rem;border-radius:8px 8px 0 0;color:white;font-weight:600;text-align:center;">
+            {{ coluna.label }} ({{ coluna.tarefas.length }})
+          </div>
+          <div
+            cdkDropList
+            [cdkDropListData]="coluna.tarefas"
+            [id]="coluna.status"
+            [cdkDropListConnectedTo]="statusList"
+            (cdkDropListDropped)="aoSoltar($event, coluna.status)"
+            style="background:#f5f5f5;border-radius:0 0 8px 8px;padding:0.5rem;min-height:300px;">
+            <div *ngFor="let tarefa of coluna.tarefas" cdkDrag
+              style="background:white;padding:0.75rem;border-radius:6px;margin-bottom:0.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);cursor:grab;">
+              <div style="font-weight:500;font-size:0.875rem;">{{ tarefa.titulo }}</div>
+              <div *ngIf="tarefa.descricao" style="font-size:0.75rem;color:#999;margin-top:0.25rem;">{{ tarefa.descricao }}</div>
+              <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;align-items:center;">
+                <span [style.background]="corPrioridade(tarefa.prioridade)" style="border-radius:12px;padding:0.15rem 0.4rem;font-size:0.65rem;color:white;font-weight:600;">{{ tarefa.prioridade }}</span>
+                <select [ngModel]="tarefa.idResponsavel" (ngModelChange)="alterarResponsavel(tarefa, $event)" (mousedown)="$event.stopPropagation()" style="padding:0.15rem 0.3rem;border:1px solid #ddd;border-radius:4px;font-size:0.7rem;cursor:pointer;max-width:120px;">
+                  <option [ngValue]="null">—</option>
+                  <option *ngFor="let membro of membros" [ngValue]="membro.idUsuario">{{ membro.nomeUsuario }}</option>
+                </select>
+                <span *ngIf="tarefa.prazo" style="font-size:0.65rem;color:#999;">{{ tarefa.prazo | date:'dd/MM' }}</span>
+              </div>
+            </div>
+            <div *ngIf="coluna.tarefas.length === 0" style="text-align:center;color:#bbb;padding:2rem;font-size:0.875rem;">
+              Arraste tarefas aqui
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="visao === 'lista' && totalPaginas > 1" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1rem;">
         <button *ngFor="let p of numerosPagina()" (click)="irParaPagina(p)"
           [style.background]="p === paginaAtual ? '#1976d2' : '#fff'"
           [style.color]="p === paginaAtual ? 'white' : '#333'"
@@ -231,8 +231,13 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   todosUsuarios: RespostaUsuario[] = [];
   erroMembro = '';
 
+  visao: 'lista' | 'board' = 'lista';
+  colunas: { status: StatusTarefa; label: string; tarefas: RespostaTarefa[] }[] = [];
+  statusList: string[] = ['TODO', 'IN_PROGRESS', 'DONE'];
+
   private intervalPolling: any;
   private idsAtribuidosConhecidos = new Set<number>();
+  private primeiroPolling = true;
 
   constructor(
     private rota: ActivatedRoute,
@@ -259,20 +264,30 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   }
 
   private iniciarPolling(): void {
+    this.verificarNovasAtribuicoes();
     this.intervalPolling = setInterval(() => this.verificarNovasAtribuicoes(), 3000);
   }
 
   private verificarNovasAtribuicoes(): void {
     const meuId = this.servicoAuth.obterIdUsuarioAtual();
     this.servicoTarefa.listar(this.idProjeto, { page: 0, size: 100 }).subscribe(res => {
-      for (const tarefa of res.conteudo) {
-        if (tarefa.idResponsavel === meuId && !this.idsAtribuidosConhecidos.has(tarefa.id)) {
-          this.servicoToast.mostrar(`Tarefa "${tarefa.titulo}" foi atribuída a você`, 'info');
+      if (this.primeiroPolling) {
+        this.primeiroPolling = false;
+      } else {
+        for (const tarefa of res.conteudo) {
+          if (tarefa.idResponsavel === meuId && !this.idsAtribuidosConhecidos.has(tarefa.id)) {
+            this.servicoToast.mostrar(`Tarefa "${tarefa.titulo}" foi atribuída a você`, 'info');
+          }
         }
       }
       this.atualizarIdsConhecidos(res.conteudo, meuId);
-      this.tarefas = res.conteudo;
-      this.totalPaginas = res.totalPaginas;
+
+      const temFiltroAtivo = this.filtroStatus || this.filtroPrioridade || this.termoBusca.trim();
+      if (!temFiltroAtivo) {
+        this.tarefas = res.conteudo;
+        this.totalPaginas = res.totalPaginas;
+        this.atualizarColunas();
+      }
     });
     this.carregarResumo();
   }
@@ -284,6 +299,46 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
         this.idsAtribuidosConhecidos.add(t.id);
       }
     }
+  }
+
+  private atualizarColunas(): void {
+    this.colunas = [
+      { status: 'TODO' as StatusTarefa, label: 'TODO', tarefas: this.tarefas.filter(t => t.status === 'TODO') },
+      { status: 'IN_PROGRESS' as StatusTarefa, label: 'IN PROGRESS', tarefas: this.tarefas.filter(t => t.status === 'IN_PROGRESS') },
+      { status: 'DONE' as StatusTarefa, label: 'DONE', tarefas: this.tarefas.filter(t => t.status === 'DONE') }
+    ];
+  }
+
+  aoSoltar(event: CdkDragDrop<RespostaTarefa[]>, novoStatus: StatusTarefa): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      return;
+    }
+    const tarefa = event.previousContainer.data[event.previousIndex];
+    const statusAnterior = tarefa.status;
+
+    if (statusAnterior === 'DONE' && novoStatus === 'TODO') {
+      this.servicoToast.mostrar('Tarefa DONE não pode voltar para TODO', 'erro');
+      return;
+    }
+
+    transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
+    tarefa.status = novoStatus;
+
+    this.erroGlobal = '';
+    this.servicoTarefa.atualizar(this.idProjeto, tarefa.id, { status: novoStatus }).subscribe({
+      next: (atualizada) => {
+        Object.assign(tarefa, atualizada);
+        this.carregarResumo();
+      },
+      error: (err: any) => {
+        tarefa.status = statusAnterior;
+        transferArrayItem(event.container.data, event.previousContainer.data, event.currentIndex, event.previousIndex);
+        const mensagem = err.error?.detail || 'Erro ao atualizar status';
+        this.erroGlobal = mensagem;
+        this.servicoToast.mostrar(mensagem, 'erro');
+      }
+    });
   }
 
   alternarMembros(): void {
@@ -306,7 +361,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     this.servicoTarefa.listar(this.idProjeto, filtros).subscribe(res => {
       this.tarefas = res.conteudo;
       this.totalPaginas = res.totalPaginas;
-      this.atualizarIdsConhecidos(res.conteudo, this.servicoAuth.obterIdUsuarioAtual());
+      this.atualizarColunas();
     });
   }
 
@@ -318,7 +373,10 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     clearTimeout(this.temporizadorBusca);
     this.temporizadorBusca = setTimeout(() => {
       if (this.termoBusca.trim().length >= 2) {
-        this.servicoTarefa.pesquisar(this.idProjeto, this.termoBusca.trim()).subscribe(res => this.tarefas = res);
+        this.servicoTarefa.pesquisar(this.idProjeto, this.termoBusca.trim()).subscribe(res => {
+          this.tarefas = res;
+          this.atualizarColunas();
+        });
       } else if (this.termoBusca.trim().length === 0) {
         this.carregarTarefas();
       }
@@ -334,7 +392,6 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     };
     if (this.novoIdResponsavel) req.idResponsavel = this.novoIdResponsavel;
     if (this.novoPrazo) req.prazo = this.novoPrazo + 'T23:59:59';
-    const responsavelSelecionado = this.novoIdResponsavel;
     this.servicoTarefa.criar(this.idProjeto, req).subscribe({
       next: (tarefa) => {
         this.novoTitulo = '';
@@ -352,9 +409,21 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   alterarStatus(tarefa: RespostaTarefa, novoStatus: StatusTarefa): void {
     this.erroGlobal = '';
     const statusAnterior = tarefa.status;
+
+    if (statusAnterior === 'DONE' && novoStatus === 'TODO') {
+      tarefa.status = statusAnterior;
+      this.servicoToast.mostrar('Tarefa DONE não pode voltar para TODO', 'erro');
+      return;
+    }
+
     this.servicoTarefa.atualizar(this.idProjeto, tarefa.id, { status: novoStatus }).subscribe({
-      next: (atualizada) => { Object.assign(tarefa, atualizada); this.carregarResumo(); },
-      error: (err: any) => { tarefa.status = statusAnterior; this.erroGlobal = err.error?.detail || 'Erro ao atualizar status'; }
+      next: (atualizada) => { Object.assign(tarefa, atualizada); this.carregarResumo(); this.atualizarColunas(); },
+      error: (err: any) => {
+        tarefa.status = statusAnterior;
+        const mensagem = err.error?.detail || 'Erro ao atualizar status';
+        this.erroGlobal = mensagem;
+        this.servicoToast.mostrar(mensagem, 'erro');
+      }
     });
   }
 
@@ -421,6 +490,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   notificarSeAtribuidoAMim(tarefa: RespostaTarefa): void {
     const meuId = this.servicoAuth.obterIdUsuarioAtual();
     if (tarefa.idResponsavel === meuId) {
+      this.idsAtribuidosConhecidos.add(tarefa.id);
       this.servicoToast.mostrar(`Tarefa "${tarefa.titulo}" foi atribuída a você`, 'info');
     }
   }
