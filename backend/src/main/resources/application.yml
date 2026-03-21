@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: taskmanager-api
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/task_manager}
+    username: ${SPRING_DATASOURCE_USERNAME:task_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:task_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  jackson:
+    time-zone: UTC
+
+jwt:
+  secret: ${JWT_SECRET:um-segredo-local-de-dev-minimo-32-chars-ok}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
