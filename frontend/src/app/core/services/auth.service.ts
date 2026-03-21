@@ -17,6 +17,7 @@ export class ServicoAutenticacao {
         localStorage.setItem('token', res.token);
         localStorage.setItem('userId', String(res.idUsuario));
         localStorage.setItem('email', res.email);
+        localStorage.setItem('perfil', res.perfil);
       })
     );
   }

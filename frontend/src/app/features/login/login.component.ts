@@ -73,7 +73,14 @@ export class LoginComponent {
     if (this.modoCadastro) {
       this.servicoAuth.cadastrar({ nome: this.nome, email: this.email, senha: this.senha }).subscribe({
         next: () => { this.modoCadastro = false; this.carregando = false; this.erro = ''; },
-        error: (err: any) => { this.erro = err.error?.detail || 'Erro ao criar conta'; this.carregando = false; }
+        error: (err: any) => {
+          if (err.error?.erros?.length) {
+            this.erro = err.error.erros.map((e: any) => e.mensagem).join('. ');
+          } else {
+            this.erro = err.error?.detail || 'Erro ao criar conta';
+          }
+          this.carregando = false;
+        }
       });
     } else {
       this.servicoAuth.autenticar({ email: this.email, senha: this.senha }).subscribe({

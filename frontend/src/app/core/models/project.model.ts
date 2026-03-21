@@ -17,11 +17,10 @@ export interface RespostaMembro {
   idUsuario: number;
   nomeUsuario: string;
   emailUsuario: string;
-  papel: 'ADMIN' | 'MEMBER';
+  perfil: 'ADMIN' | 'MEMBER';
   entradoEm: string;
 }
 
 export interface RequisicaoMembro {
   idUsuario: number;
-  papel: 'ADMIN' | 'MEMBER';
 }
