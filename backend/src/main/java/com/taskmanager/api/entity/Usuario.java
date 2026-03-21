@@ -2,6 +2,8 @@ package com.taskmanager.api.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,12 +29,19 @@ public class Usuario {
     @Column(name = "password", nullable = false)
     private String senha;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "profile", nullable = false)
+    private Perfil perfil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
     @PrePersist
     private void prePersist() {
         this.criadoEm = LocalDateTime.now();
+        if (this.perfil == null) {
+            this.perfil = Perfil.MEMBER;
+        }
     }
 
     public Usuario() {
@@ -68,6 +77,14 @@ public class Usuario {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public Perfil getPerfil() {
+        return perfil;
+    }
+
+    public void setPerfil(Perfil perfil) {
+        this.perfil = perfil;
     }
 
     public LocalDateTime getCriadoEm() {

@@ -1,6 +1,6 @@
 package com.taskmanager.api.entity;
 
-public enum PapelProjeto {
+public enum Perfil {
     ADMIN,
     MEMBER
 }

@@ -7,7 +7,7 @@ import com.taskmanager.api.dto.request.RequisicaoTarefa;
 import com.taskmanager.api.dto.response.RespostaProjeto;
 import com.taskmanager.api.dto.response.RespostaResumoTarefa;
 import com.taskmanager.api.dto.response.RespostaTarefa;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.PrioridadeTarefa;
 import com.taskmanager.api.entity.StatusTarefa;
 import com.taskmanager.api.entity.Usuario;
@@ -58,9 +58,9 @@ class ServicoTarefaTest {
 
     @BeforeEach
     void setUp() {
-        adminUser = criarUsuario("Admin", "admin@task.com");
-        memberUser = criarUsuario("Member", "member@task.com");
-        outsiderUser = criarUsuario("Outsider", "outsider@task.com");
+        adminUser = criarUsuario("Admin", "admin@task.com", Perfil.ADMIN);
+        memberUser = criarUsuario("Member", "member@task.com", Perfil.MEMBER);
+        outsiderUser = criarUsuario("Outsider", "outsider@task.com", Perfil.MEMBER);
 
         RespostaProjeto project = servicoProjeto.criar(
                 requisicaoProjeto("Projeto Task", null), adminUser.getEmail());
@@ -68,7 +68,6 @@ class ServicoTarefaTest {
 
         RequisicaoMembro addMember = new RequisicaoMembro();
         addMember.setIdUsuario(memberUser.getId());
-        addMember.setPapel(PapelProjeto.MEMBER);
         servicoProjeto.adicionarMembro(projectId, addMember, adminUser.getEmail());
     }
 
@@ -194,11 +193,12 @@ class ServicoTarefaTest {
         assertThat(resumo.getPorStatus()).containsEntry("DONE", 1L);
     }
 
-    private Usuario criarUsuario(String nome, String email) {
+    private Usuario criarUsuario(String nome, String email, Perfil perfil) {
         Usuario usuario = new Usuario();
         usuario.setNome(nome);
         usuario.setEmail(email);
         usuario.setSenha(passwordEncoder.encode("senha123"));
+        usuario.setPerfil(perfil);
         return repositorioUsuario.save(usuario);
     }
 

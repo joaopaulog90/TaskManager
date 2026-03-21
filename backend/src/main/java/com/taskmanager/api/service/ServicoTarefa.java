@@ -5,7 +5,7 @@ import com.taskmanager.api.dto.request.RequisicaoTarefa;
 import com.taskmanager.api.dto.response.RespostaPaginada;
 import com.taskmanager.api.dto.response.RespostaResumoTarefa;
 import com.taskmanager.api.dto.response.RespostaTarefa;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.PrioridadeTarefa;
 import com.taskmanager.api.entity.Projeto;
 import com.taskmanager.api.entity.StatusTarefa;
@@ -142,9 +142,7 @@ public class ServicoTarefa {
 
         PrioridadeTarefa prioridadeEfetiva = requisicao.getPrioridade() != null ? requisicao.getPrioridade() : tarefa.getPrioridade();
         if (novoStatus == StatusTarefa.DONE && prioridadeEfetiva == PrioridadeTarefa.CRITICAL) {
-            boolean ehAdmin = repositorioMembroProjeto
-                    .existePorIdProjetoIdUsuarioEPapel(idProjeto, usuarioAtual.getId(), PapelProjeto.ADMIN);
-            if (!ehAdmin) {
+            if (usuarioAtual.getPerfil() != Perfil.ADMIN) {
                 throw new AccessDeniedException("Apenas ADMIN pode concluir tarefas CRITICAL");
             }
         }
@@ -196,7 +194,8 @@ public class ServicoTarefa {
 
     public void deletar(Long idProjeto, Long idTarefa, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
-        exigirAdmin(idProjeto, usuarioAtual.getId());
+        exigirMembro(idProjeto, usuarioAtual.getId());
+        exigirAdmin(usuarioAtual);
 
         Tarefa tarefa = buscarTarefaNoProjetoOuLancar(idProjeto, idTarefa);
         repositorioTarefa.delete(tarefa);
@@ -238,10 +237,8 @@ public class ServicoTarefa {
         }
     }
 
-    private void exigirAdmin(Long idProjeto, Long idUsuario) {
-        boolean ehAdmin = repositorioMembroProjeto
-                .existePorIdProjetoIdUsuarioEPapel(idProjeto, idUsuario, PapelProjeto.ADMIN);
-        if (!ehAdmin) {
+    private void exigirAdmin(Usuario usuario) {
+        if (usuario.getPerfil() != Perfil.ADMIN) {
             throw new AccessDeniedException("Apenas ADMIN pode executar esta operação");
         }
     }

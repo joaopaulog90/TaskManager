@@ -3,7 +3,7 @@ package com.taskmanager.api.service;
 import com.taskmanager.api.dto.request.RequisicaoAtualizacaoTarefa;
 import com.taskmanager.api.dto.request.RequisicaoTarefa;
 import com.taskmanager.api.dto.response.RespostaTarefa;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.PrioridadeTarefa;
 import com.taskmanager.api.entity.Projeto;
 import com.taskmanager.api.entity.StatusTarefa;
@@ -48,12 +48,13 @@ class ServicoTarefaUnitTest {
     @InjectMocks
     private ServicoTarefa servicoTarefa;
 
-    private Usuario usuarioFake(Long id, String email) {
+    private Usuario usuarioFake(Long id, String email, Perfil perfil) {
         Usuario u = new Usuario();
         u.setId(id);
         u.setEmail(email);
         u.setNome("User " + id);
         u.setSenha("hashed");
+        u.setPerfil(perfil);
         return u;
     }
 
@@ -79,7 +80,7 @@ class ServicoTarefaUnitTest {
 
     @Test
     void criar_deveDefinirStatusTodo_sempre() {
-        Usuario criador = usuarioFake(1L, "user@example.com");
+        Usuario criador = usuarioFake(1L, "user@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, criador);
 
         when(repositorioUsuario.buscarPorEmail("user@example.com")).thenReturn(Optional.of(criador));
@@ -102,7 +103,7 @@ class ServicoTarefaUnitTest {
 
     @Test
     void atualizar_deveLancarException_quandoDoneVoltaParaTodo() {
-        Usuario usuario = usuarioFake(1L, "user@example.com");
+        Usuario usuario = usuarioFake(1L, "user@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, usuario);
         Tarefa tarefa = tarefaFake(100L, projeto, StatusTarefa.DONE, PrioridadeTarefa.LOW);
 
@@ -120,15 +121,13 @@ class ServicoTarefaUnitTest {
 
     @Test
     void atualizar_deveLancarAccessDenied_quandoMembreTentaFecharCritical() {
-        Usuario usuario = usuarioFake(1L, "membro@example.com");
+        Usuario usuario = usuarioFake(1L, "membro@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, usuario);
         Tarefa tarefa = tarefaFake(100L, projeto, StatusTarefa.IN_PROGRESS, PrioridadeTarefa.CRITICAL);
 
         when(repositorioUsuario.buscarPorEmail("membro@example.com")).thenReturn(Optional.of(usuario));
         when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 1L)).thenReturn(true);
         when(repositorioTarefa.findById(100L)).thenReturn(Optional.of(tarefa));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 1L, PapelProjeto.ADMIN))
-                .thenReturn(false);
 
         RequisicaoAtualizacaoTarefa req = new RequisicaoAtualizacaoTarefa();
         req.setStatus(StatusTarefa.DONE);
@@ -139,15 +138,13 @@ class ServicoTarefaUnitTest {
 
     @Test
     void atualizar_devePermitirAdmin_fecharCritical() {
-        Usuario admin = usuarioFake(1L, "admin@example.com");
+        Usuario admin = usuarioFake(1L, "admin@example.com", Perfil.ADMIN);
         Projeto projeto = projetoFake(10L, admin);
         Tarefa tarefa = tarefaFake(100L, projeto, StatusTarefa.IN_PROGRESS, PrioridadeTarefa.CRITICAL);
 
         when(repositorioUsuario.buscarPorEmail("admin@example.com")).thenReturn(Optional.of(admin));
         when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 1L)).thenReturn(true);
         when(repositorioTarefa.findById(100L)).thenReturn(Optional.of(tarefa));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 1L, PapelProjeto.ADMIN))
-                .thenReturn(true);
 
         Tarefa tarefaSalva = tarefaFake(100L, projeto, StatusTarefa.DONE, PrioridadeTarefa.CRITICAL);
         when(repositorioTarefa.save(any(Tarefa.class))).thenReturn(tarefaSalva);
@@ -162,8 +159,8 @@ class ServicoTarefaUnitTest {
 
     @Test
     void atualizar_deveLancarException_quandoWipLimitAtingido() {
-        Usuario usuario = usuarioFake(1L, "user@example.com");
-        Usuario responsavel = usuarioFake(2L, "assignee@example.com");
+        Usuario usuario = usuarioFake(1L, "user@example.com", Perfil.MEMBER);
+        Usuario responsavel = usuarioFake(2L, "assignee@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, usuario);
 
         Tarefa tarefa = tarefaFake(100L, projeto, StatusTarefa.TODO, PrioridadeTarefa.MEDIUM);
@@ -186,8 +183,8 @@ class ServicoTarefaUnitTest {
 
     @Test
     void atualizar_devePermitir_quandoWipAbaixoDoLimite() {
-        Usuario usuario = usuarioFake(1L, "user@example.com");
-        Usuario responsavel = usuarioFake(2L, "assignee@example.com");
+        Usuario usuario = usuarioFake(1L, "user@example.com", Perfil.MEMBER);
+        Usuario responsavel = usuarioFake(2L, "assignee@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, usuario);
 
         Tarefa tarefa = tarefaFake(100L, projeto, StatusTarefa.TODO, PrioridadeTarefa.MEDIUM);

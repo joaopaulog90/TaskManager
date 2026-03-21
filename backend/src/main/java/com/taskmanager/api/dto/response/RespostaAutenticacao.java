@@ -1,17 +1,19 @@
 package com.taskmanager.api.dto.response;
 
+import com.taskmanager.api.entity.Perfil;
+
 public class RespostaAutenticacao {
 
     private String token;
-
     private Long idUsuario;
-
     private String email;
+    private Perfil perfil;
 
-    public RespostaAutenticacao(String token, Long idUsuario, String email) {
+    public RespostaAutenticacao(String token, Long idUsuario, String email, Perfil perfil) {
         this.token = token;
         this.idUsuario = idUsuario;
         this.email = email;
+        this.perfil = perfil;
     }
 
     public String getToken() {
@@ -36,5 +38,13 @@ public class RespostaAutenticacao {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Perfil getPerfil() {
+        return perfil;
+    }
+
+    public void setPerfil(Perfil perfil) {
+        this.perfil = perfil;
     }
 }

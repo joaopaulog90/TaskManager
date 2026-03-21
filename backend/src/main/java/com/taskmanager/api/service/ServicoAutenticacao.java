@@ -57,6 +57,6 @@ public class ServicoAutenticacao {
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado após autenticação"));
 
         String tokenJwt = provedorToken.gerarToken(emailUsuarioAtual);
-        return new RespostaAutenticacao(tokenJwt, usuarioAtual.getId(), usuarioAtual.getEmail());
+        return new RespostaAutenticacao(tokenJwt, usuarioAtual.getId(), usuarioAtual.getEmail(), usuarioAtual.getPerfil());
     }
 }

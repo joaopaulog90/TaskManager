@@ -27,6 +27,11 @@ jwt:
   secret: ${JWT_SECRET:um-segredo-local-de-dev-minimo-32-chars-ok}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
+admin-seed:
+  nome: ${ADMIN_SEED_NOME:Administrador}
+  email: ${ADMIN_SEED_EMAIL:admin@taskmanager.com}
+  senha: ${ADMIN_SEED_SENHA:admin123}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

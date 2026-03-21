@@ -1,7 +1,6 @@
 package com.taskmanager.api.repository;
 
 import com.taskmanager.api.entity.MembroProjeto;
-import com.taskmanager.api.entity.PapelProjeto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -25,9 +24,6 @@ public interface RepositorioMembroProjeto extends JpaRepository<MembroProjeto, L
 
     @Query("SELECT COUNT(pm) > 0 FROM MembroProjeto pm WHERE pm.projeto.id = :idProjeto AND pm.usuario.id = :idUsuario")
     boolean existePorIdProjetoEIdUsuario(@Param("idProjeto") Long idProjeto, @Param("idUsuario") Long idUsuario);
-
-    @Query("SELECT COUNT(pm) > 0 FROM MembroProjeto pm WHERE pm.projeto.id = :idProjeto AND pm.usuario.id = :idUsuario AND pm.papel = :papel")
-    boolean existePorIdProjetoIdUsuarioEPapel(@Param("idProjeto") Long idProjeto, @Param("idUsuario") Long idUsuario, @Param("papel") PapelProjeto papel);
 
     @Modifying
     @Query("DELETE FROM MembroProjeto pm WHERE pm.projeto.id = :idProjeto AND pm.usuario.id = :idUsuario")

@@ -5,7 +5,7 @@ import com.taskmanager.api.dto.request.RequisicaoProjeto;
 import com.taskmanager.api.dto.response.RespostaMembro;
 import com.taskmanager.api.dto.response.RespostaProjeto;
 import com.taskmanager.api.entity.MembroProjeto;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.Projeto;
 import com.taskmanager.api.entity.Usuario;
 import com.taskmanager.api.repository.RepositorioMembroProjeto;
@@ -42,6 +42,7 @@ public class ServicoProjeto {
 
     public RespostaProjeto criar(RequisicaoProjeto requisicao, String emailUsuarioAtual) {
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
+        exigirAdmin(usuarioAtual);
 
         Projeto projeto = new Projeto();
         projeto.setNome(requisicao.getNome());
@@ -53,7 +54,6 @@ public class ServicoProjeto {
         MembroProjeto membroProprietario = new MembroProjeto();
         membroProprietario.setProjeto(salvo);
         membroProprietario.setUsuario(usuarioAtual);
-        membroProprietario.setPapel(PapelProjeto.ADMIN);
         repositorioMembroProjeto.save(membroProprietario);
 
         return paraRespostaProjeto(salvo, 1);
@@ -103,7 +103,8 @@ public class ServicoProjeto {
         Projeto projeto = buscarProjetoOuLancar(idProjeto);
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
 
-        exigirAdmin(projeto.getId(), usuarioAtual.getId());
+        exigirMembro(projeto.getId(), usuarioAtual.getId());
+        exigirAdmin(usuarioAtual);
 
         projeto.setNome(requisicao.getNome());
         projeto.setDescricao(requisicao.getDescricao());
@@ -117,7 +118,8 @@ public class ServicoProjeto {
         Projeto projeto = buscarProjetoOuLancar(idProjeto);
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
 
-        exigirAdmin(projeto.getId(), usuarioAtual.getId());
+        exigirMembro(projeto.getId(), usuarioAtual.getId());
+        exigirAdmin(usuarioAtual);
 
         repositorioTarefa.deletarPorIdProjeto(idProjeto);
         repositorioMembroProjeto.buscarPorIdProjeto(idProjeto)
@@ -129,7 +131,8 @@ public class ServicoProjeto {
         Projeto projeto = buscarProjetoOuLancar(idProjeto);
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
 
-        exigirAdmin(projeto.getId(), usuarioAtual.getId());
+        exigirMembro(projeto.getId(), usuarioAtual.getId());
+        exigirAdmin(usuarioAtual);
 
         Usuario novoMembro = repositorioUsuario.findById(requisicao.getIdUsuario())
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -142,7 +145,6 @@ public class ServicoProjeto {
         MembroProjeto membro = new MembroProjeto();
         membro.setProjeto(projeto);
         membro.setUsuario(novoMembro);
-        membro.setPapel(requisicao.getPapel());
         MembroProjeto salvo = repositorioMembroProjeto.save(membro);
 
         return paraRespostaMembro(salvo);
@@ -152,7 +154,8 @@ public class ServicoProjeto {
         Projeto projeto = buscarProjetoOuLancar(idProjeto);
         Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
 
-        exigirAdmin(projeto.getId(), usuarioAtual.getId());
+        exigirMembro(projeto.getId(), usuarioAtual.getId());
+        exigirAdmin(usuarioAtual);
 
         if (projeto.getProprietario().getId().equals(idUsuario)) {
             throw new IllegalStateException("Não é possível remover o owner do projeto");
@@ -184,10 +187,8 @@ public class ServicoProjeto {
         }
     }
 
-    private void exigirAdmin(Long idProjeto, Long idUsuario) {
-        boolean ehAdmin = repositorioMembroProjeto
-                .existePorIdProjetoIdUsuarioEPapel(idProjeto, idUsuario, PapelProjeto.ADMIN);
-        if (!ehAdmin) {
+    private void exigirAdmin(Usuario usuario) {
+        if (usuario.getPerfil() != Perfil.ADMIN) {
             throw new AccessDeniedException("Apenas ADMIN pode executar esta operação");
         }
     }
@@ -219,7 +220,7 @@ public class ServicoProjeto {
         resposta.setIdUsuario(membro.getUsuario().getId());
         resposta.setNomeUsuario(membro.getUsuario().getNome());
         resposta.setEmailUsuario(membro.getUsuario().getEmail());
-        resposta.setPapel(membro.getPapel());
+        resposta.setPerfil(membro.getUsuario().getPerfil());
         resposta.setEntradoEm(membro.getEntradoEm());
         return resposta;
     }

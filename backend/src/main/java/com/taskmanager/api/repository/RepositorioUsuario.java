@@ -16,4 +16,7 @@ public interface RepositorioUsuario extends JpaRepository<Usuario, Long> {
 
     @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.email = :email")
     boolean existePorEmail(@Param("email") String email);
+
+    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.perfil = com.taskmanager.api.entity.Perfil.ADMIN")
+    boolean existeAdmin();
 }

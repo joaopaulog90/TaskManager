@@ -4,7 +4,7 @@ import com.taskmanager.api.dto.request.RequisicaoMembro;
 import com.taskmanager.api.dto.request.RequisicaoProjeto;
 import com.taskmanager.api.dto.response.RespostaProjeto;
 import com.taskmanager.api.entity.MembroProjeto;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.Projeto;
 import com.taskmanager.api.entity.Usuario;
 import com.taskmanager.api.repository.RepositorioMembroProjeto;
@@ -46,12 +46,13 @@ class ServicoProjetoUnitTest {
     @InjectMocks
     private ServicoProjeto servicoProjeto;
 
-    private Usuario usuarioFake(Long id, String email) {
+    private Usuario usuarioFake(Long id, String email, Perfil perfil) {
         Usuario u = new Usuario();
         u.setId(id);
         u.setEmail(email);
         u.setNome("User " + id);
         u.setSenha("hashed");
+        u.setPerfil(perfil);
         return u;
     }
 
@@ -65,8 +66,8 @@ class ServicoProjetoUnitTest {
     }
 
     @Test
-    void criar_deveAdicionarProprietarioComoAdmin() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
+    void criar_deveAdicionarProprietarioComoMembro() {
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
         when(repositorioUsuario.buscarPorEmail("owner@example.com")).thenReturn(Optional.of(proprietario));
 
         Projeto projetoSalvo = projetoFake(10L, proprietario);
@@ -75,7 +76,6 @@ class ServicoProjetoUnitTest {
         MembroProjeto membroSalvo = new MembroProjeto();
         membroSalvo.setProjeto(projetoSalvo);
         membroSalvo.setUsuario(proprietario);
-        membroSalvo.setPapel(PapelProjeto.ADMIN);
         when(repositorioMembroProjeto.save(any(MembroProjeto.class))).thenReturn(membroSalvo);
 
         RequisicaoProjeto req = new RequisicaoProjeto();
@@ -86,14 +86,13 @@ class ServicoProjetoUnitTest {
 
         ArgumentCaptor<MembroProjeto> captor = ArgumentCaptor.forClass(MembroProjeto.class);
         verify(repositorioMembroProjeto).save(captor.capture());
-        assertThat(captor.getValue().getPapel()).isEqualTo(PapelProjeto.ADMIN);
         assertThat(captor.getValue().getUsuario()).isEqualTo(proprietario);
     }
 
     @Test
     void buscarPorId_deveLancarAccessDenied_quandoUsuarioNaoEhMembro() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
-        Usuario estranho = usuarioFake(2L, "estranho@example.com");
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
+        Usuario estranho = usuarioFake(2L, "estranho@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, proprietario);
 
         when(repositorioProjeto.findById(10L)).thenReturn(Optional.of(projeto));
@@ -106,14 +105,13 @@ class ServicoProjetoUnitTest {
 
     @Test
     void atualizar_deveLancarAccessDenied_quandoUsuarioEhMember() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
-        Usuario membro = usuarioFake(2L, "membro@example.com");
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
+        Usuario membro = usuarioFake(2L, "membro@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, proprietario);
 
         when(repositorioProjeto.findById(10L)).thenReturn(Optional.of(projeto));
         when(repositorioUsuario.buscarPorEmail("membro@example.com")).thenReturn(Optional.of(membro));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 2L, PapelProjeto.ADMIN))
-                .thenReturn(false);
+        when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 2L)).thenReturn(true);
 
         RequisicaoProjeto req = new RequisicaoProjeto();
         req.setNome("Novo Nome");
@@ -124,14 +122,13 @@ class ServicoProjetoUnitTest {
 
     @Test
     void deletar_deveLancarAccessDenied_quandoUsuarioEhMember() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
-        Usuario membro = usuarioFake(2L, "membro@example.com");
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
+        Usuario membro = usuarioFake(2L, "membro@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, proprietario);
 
         when(repositorioProjeto.findById(10L)).thenReturn(Optional.of(projeto));
         when(repositorioUsuario.buscarPorEmail("membro@example.com")).thenReturn(Optional.of(membro));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 2L, PapelProjeto.ADMIN))
-                .thenReturn(false);
+        when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 2L)).thenReturn(true);
 
         assertThatThrownBy(() -> servicoProjeto.deletar(10L, "membro@example.com"))
                 .isInstanceOf(AccessDeniedException.class);
@@ -139,20 +136,18 @@ class ServicoProjetoUnitTest {
 
     @Test
     void adicionarMembro_deveLancarException_quandoMembroJaExiste() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
-        Usuario candidato = usuarioFake(2L, "candidato@example.com");
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
+        Usuario candidato = usuarioFake(2L, "candidato@example.com", Perfil.MEMBER);
         Projeto projeto = projetoFake(10L, proprietario);
 
         when(repositorioProjeto.findById(10L)).thenReturn(Optional.of(projeto));
         when(repositorioUsuario.buscarPorEmail("owner@example.com")).thenReturn(Optional.of(proprietario));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 1L, PapelProjeto.ADMIN))
-                .thenReturn(true);
+        when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 1L)).thenReturn(true);
         when(repositorioUsuario.findById(2L)).thenReturn(Optional.of(candidato));
         when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 2L)).thenReturn(true);
 
         RequisicaoMembro req = new RequisicaoMembro();
         req.setIdUsuario(2L);
-        req.setPapel(PapelProjeto.MEMBER);
 
         assertThatThrownBy(() -> servicoProjeto.adicionarMembro(10L, req, "owner@example.com"))
                 .isInstanceOf(IllegalStateException.class)
@@ -161,13 +156,12 @@ class ServicoProjetoUnitTest {
 
     @Test
     void removerMembro_deveLancarException_quandoTentaRemoverProprietario() {
-        Usuario proprietario = usuarioFake(1L, "owner@example.com");
+        Usuario proprietario = usuarioFake(1L, "owner@example.com", Perfil.ADMIN);
         Projeto projeto = projetoFake(10L, proprietario);
 
         when(repositorioProjeto.findById(10L)).thenReturn(Optional.of(projeto));
         when(repositorioUsuario.buscarPorEmail("owner@example.com")).thenReturn(Optional.of(proprietario));
-        when(repositorioMembroProjeto.existePorIdProjetoIdUsuarioEPapel(10L, 1L, PapelProjeto.ADMIN))
-                .thenReturn(true);
+        when(repositorioMembroProjeto.existePorIdProjetoEIdUsuario(10L, 1L)).thenReturn(true);
 
         assertThatThrownBy(() -> servicoProjeto.removerMembro(10L, 1L, "owner@example.com"))
                 .isInstanceOf(IllegalStateException.class)

@@ -4,6 +4,7 @@ import com.taskmanager.api.dto.request.RequisicaoCadastro;
 import com.taskmanager.api.dto.request.RequisicaoLogin;
 import com.taskmanager.api.dto.response.RespostaAutenticacao;
 import com.taskmanager.api.dto.response.RespostaUsuario;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.Usuario;
 import com.taskmanager.api.repository.RepositorioUsuario;
 import com.taskmanager.api.security.ProvedorTokenJwt;
@@ -58,6 +59,7 @@ class ServicoAutenticacaoUnitTest {
         salvo.setNome("Ana Lima");
         salvo.setEmail("ana@example.com");
         salvo.setSenha("hashed");
+        salvo.setPerfil(Perfil.MEMBER);
         when(repositorioUsuario.save(any(Usuario.class))).thenReturn(salvo);
 
         RespostaUsuario resposta = servicoAutenticacao.cadastrar(requisicao);
@@ -96,6 +98,7 @@ class ServicoAutenticacaoUnitTest {
         usuario.setId(42L);
         usuario.setEmail("ana@example.com");
         usuario.setNome("Ana Lima");
+        usuario.setPerfil(Perfil.MEMBER);
         when(repositorioUsuario.buscarPorEmail("ana@example.com")).thenReturn(Optional.of(usuario));
 
         when(provedorToken.gerarToken("ana@example.com")).thenReturn("token-fake");
@@ -105,6 +108,7 @@ class ServicoAutenticacaoUnitTest {
         assertThat(resposta.getToken()).isEqualTo("token-fake");
         assertThat(resposta.getEmail()).isEqualTo("ana@example.com");
         assertThat(resposta.getIdUsuario()).isEqualTo(42L);
+        assertThat(resposta.getPerfil()).isEqualTo(Perfil.MEMBER);
     }
 
     @Test

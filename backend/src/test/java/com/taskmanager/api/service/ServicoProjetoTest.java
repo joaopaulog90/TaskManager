@@ -4,7 +4,7 @@ import com.taskmanager.api.dto.request.RequisicaoMembro;
 import com.taskmanager.api.dto.request.RequisicaoProjeto;
 import com.taskmanager.api.dto.response.RespostaMembro;
 import com.taskmanager.api.dto.response.RespostaProjeto;
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.Usuario;
 import com.taskmanager.api.repository.RepositorioUsuario;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,13 +49,13 @@ class ServicoProjetoTest {
 
     @BeforeEach
     void setUp() {
-        adminUser = criarUsuario("Admin Teste", "admin@projeto.com");
-        memberUser = criarUsuario("Membro Teste", "membro@projeto.com");
-        outsiderUser = criarUsuario("Fora do Projeto", "fora@projeto.com");
+        adminUser = criarUsuario("Admin Teste", "admin@projeto.com", Perfil.ADMIN);
+        memberUser = criarUsuario("Membro Teste", "membro@projeto.com", Perfil.MEMBER);
+        outsiderUser = criarUsuario("Fora do Projeto", "fora@projeto.com", Perfil.MEMBER);
     }
 
     @Test
-    void criarProjeto_ownerDeveSerAdicionadoComoAdmin() {
+    void criarProjeto_ownerDeveSerAdicionadoComoMembro() {
         RequisicaoProjeto req = requisicaoProjeto("Projeto Alpha", "Descricao");
 
         RespostaProjeto resposta = servicoProjeto.criar(req, adminUser.getEmail());
@@ -67,23 +67,32 @@ class ServicoProjetoTest {
 
         List<RespostaMembro> membros = servicoProjeto.listarMembros(resposta.getId(), adminUser.getEmail());
         assertThat(membros).hasSize(1);
-        assertThat(membros.get(0).getPapel()).isEqualTo(PapelProjeto.ADMIN);
+        assertThat(membros.get(0).getPerfil()).isEqualTo(Perfil.ADMIN);
         assertThat(membros.get(0).getIdUsuario()).isEqualTo(adminUser.getId());
     }
 
     @Test
     void listarProjetos_usuarioVeApenasOsSeusProjetos() {
-        servicoProjeto.criar(requisicaoProjeto("Projeto do Admin", null), adminUser.getEmail());
-        servicoProjeto.criar(requisicaoProjeto("Projeto do Membro", null), memberUser.getEmail());
+        RespostaProjeto projetoA = servicoProjeto.criar(requisicaoProjeto("Projeto A", null), adminUser.getEmail());
+        RespostaProjeto projetoB = servicoProjeto.criar(requisicaoProjeto("Projeto B", null), adminUser.getEmail());
+
+        RequisicaoMembro addMember = new RequisicaoMembro();
+        addMember.setIdUsuario(memberUser.getId());
+        servicoProjeto.adicionarMembro(projetoB.getId(), addMember, adminUser.getEmail());
 
         List<RespostaProjeto> projetosAdmin = servicoProjeto.listarDoUsuario(adminUser.getEmail());
         List<RespostaProjeto> projetosMembro = servicoProjeto.listarDoUsuario(memberUser.getEmail());
 
-        assertThat(projetosAdmin).hasSize(1);
-        assertThat(projetosAdmin.get(0).getNome()).isEqualTo("Projeto do Admin");
-
+        assertThat(projetosAdmin).hasSize(2);
         assertThat(projetosMembro).hasSize(1);
-        assertThat(projetosMembro.get(0).getNome()).isEqualTo("Projeto do Membro");
+        assertThat(projetosMembro.get(0).getNome()).isEqualTo("Projeto B");
+    }
+
+    @Test
+    void criarProjeto_memberNaoPodeCriar() {
+        assertThatThrownBy(() ->
+                servicoProjeto.criar(requisicaoProjeto("Projeto Proibido", null), memberUser.getEmail()))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -92,7 +101,6 @@ class ServicoProjetoTest {
 
         RequisicaoMembro addMember = new RequisicaoMembro();
         addMember.setIdUsuario(memberUser.getId());
-        addMember.setPapel(PapelProjeto.MEMBER);
         servicoProjeto.adicionarMembro(projeto.getId(), addMember, adminUser.getEmail());
 
         assertThatThrownBy(() ->
@@ -106,12 +114,10 @@ class ServicoProjetoTest {
 
         RequisicaoMembro addMember = new RequisicaoMembro();
         addMember.setIdUsuario(memberUser.getId());
-        addMember.setPapel(PapelProjeto.MEMBER);
         servicoProjeto.adicionarMembro(projeto.getId(), addMember, adminUser.getEmail());
 
         RequisicaoMembro tentativa = new RequisicaoMembro();
         tentativa.setIdUsuario(outsiderUser.getId());
-        tentativa.setPapel(PapelProjeto.MEMBER);
 
         assertThatThrownBy(() ->
                 servicoProjeto.adicionarMembro(projeto.getId(), tentativa, memberUser.getEmail()))
@@ -124,7 +130,6 @@ class ServicoProjetoTest {
 
         RequisicaoMembro addMember = new RequisicaoMembro();
         addMember.setIdUsuario(memberUser.getId());
-        addMember.setPapel(PapelProjeto.MEMBER);
         servicoProjeto.adicionarMembro(projeto.getId(), addMember, adminUser.getEmail());
 
         assertThatThrownBy(() ->
@@ -143,11 +148,12 @@ class ServicoProjetoTest {
                 .hasMessageContaining("owner");
     }
 
-    private Usuario criarUsuario(String nome, String email) {
+    private Usuario criarUsuario(String nome, String email, Perfil perfil) {
         Usuario usuario = new Usuario();
         usuario.setNome(nome);
         usuario.setEmail(email);
         usuario.setSenha(passwordEncoder.encode("senha123"));
+        usuario.setPerfil(perfil);
         return repositorioUsuario.save(usuario);
     }
 

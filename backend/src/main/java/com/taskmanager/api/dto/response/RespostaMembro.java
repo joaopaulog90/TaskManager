@@ -1,6 +1,6 @@
 package com.taskmanager.api.dto.response;
 
-import com.taskmanager.api.entity.PapelProjeto;
+import com.taskmanager.api.entity.Perfil;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +9,7 @@ public class RespostaMembro {
     private Long idUsuario;
     private String nomeUsuario;
     private String emailUsuario;
-    private PapelProjeto papel;
+    private Perfil perfil;
     private LocalDateTime entradoEm;
 
     public RespostaMembro() {
@@ -39,12 +39,12 @@ public class RespostaMembro {
         this.emailUsuario = emailUsuario;
     }
 
-    public PapelProjeto getPapel() {
-        return papel;
+    public Perfil getPerfil() {
+        return perfil;
     }
 
-    public void setPapel(PapelProjeto papel) {
-        this.papel = papel;
+    public void setPerfil(Perfil perfil) {
+        this.perfil = perfil;
     }
 
     public LocalDateTime getEntradoEm() {
