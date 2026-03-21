@@ -2,9 +2,11 @@ package com.taskmanager.api.service;
 
 import com.taskmanager.api.dto.request.RequisicaoAtualizacaoTarefa;
 import com.taskmanager.api.dto.request.RequisicaoTarefa;
+import com.taskmanager.api.dto.response.RespostaHistoricoTarefa;
 import com.taskmanager.api.dto.response.RespostaPaginada;
 import com.taskmanager.api.dto.response.RespostaResumoTarefa;
 import com.taskmanager.api.dto.response.RespostaTarefa;
+import com.taskmanager.api.entity.HistoricoTarefa;
 import com.taskmanager.api.entity.Perfil;
 import com.taskmanager.api.entity.PrioridadeTarefa;
 import com.taskmanager.api.entity.Projeto;
@@ -12,6 +14,7 @@ import com.taskmanager.api.entity.StatusTarefa;
 import com.taskmanager.api.entity.Tarefa;
 import com.taskmanager.api.entity.Usuario;
 import com.taskmanager.api.repository.EspecificacaoTarefa;
+import com.taskmanager.api.repository.RepositorioHistoricoTarefa;
 import com.taskmanager.api.repository.RepositorioMembroProjeto;
 import com.taskmanager.api.repository.RepositorioProjeto;
 import com.taskmanager.api.repository.RepositorioTarefa;
@@ -30,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -41,15 +45,18 @@ public class ServicoTarefa {
     private final RepositorioProjeto repositorioProjeto;
     private final RepositorioMembroProjeto repositorioMembroProjeto;
     private final RepositorioUsuario repositorioUsuario;
+    private final RepositorioHistoricoTarefa repositorioHistoricoTarefa;
 
     public ServicoTarefa(RepositorioTarefa repositorioTarefa,
                           RepositorioProjeto repositorioProjeto,
                           RepositorioMembroProjeto repositorioMembroProjeto,
-                          RepositorioUsuario repositorioUsuario) {
+                          RepositorioUsuario repositorioUsuario,
+                          RepositorioHistoricoTarefa repositorioHistoricoTarefa) {
         this.repositorioTarefa = repositorioTarefa;
         this.repositorioProjeto = repositorioProjeto;
         this.repositorioMembroProjeto = repositorioMembroProjeto;
         this.repositorioUsuario = repositorioUsuario;
+        this.repositorioHistoricoTarefa = repositorioHistoricoTarefa;
     }
 
     @CacheEvict(value = "resumo-projeto", key = "#idProjeto")
@@ -75,6 +82,11 @@ public class ServicoTarefa {
         }
 
         Tarefa salva = repositorioTarefa.save(tarefa);
+        registrarAlteracao(salva, usuarioAtual, "status", null, salva.getStatus().name());
+        registrarAlteracao(salva, usuarioAtual, "prioridade", null, salva.getPrioridade().name());
+        if (salva.getResponsavel() != null) {
+            registrarAlteracao(salva, usuarioAtual, "responsavel", null, salva.getResponsavel().getNome());
+        }
         return paraResposta(salva);
     }
 
@@ -135,6 +147,14 @@ public class ServicoTarefa {
 
         Tarefa tarefa = buscarTarefaNoProjetoOuLancar(idProjeto, idTarefa);
 
+        // snapshot antes das alterações
+        String tituloAnterior = tarefa.getTitulo();
+        String descricaoAnterior = tarefa.getDescricao();
+        String statusAnterior = tarefa.getStatus().name();
+        String prioridadeAnterior = tarefa.getPrioridade().name();
+        String prazoAnterior = tarefa.getPrazo() != null ? tarefa.getPrazo().toString() : null;
+        String responsavelAnterior = tarefa.getResponsavel() != null ? tarefa.getResponsavel().getNome() : null;
+
         StatusTarefa novoStatus = requisicao.getStatus();
         PrioridadeTarefa novaPrioridade = requisicao.getPrioridade() != null ? requisicao.getPrioridade() : tarefa.getPrioridade();
 
@@ -193,6 +213,16 @@ public class ServicoTarefa {
         tarefa.setResponsavel(novoResponsavel);
 
         Tarefa salva = repositorioTarefa.save(tarefa);
+
+        registrarAlteracao(salva, usuarioAtual, "titulo", tituloAnterior, salva.getTitulo());
+        registrarAlteracao(salva, usuarioAtual, "descricao", descricaoAnterior, salva.getDescricao());
+        registrarAlteracao(salva, usuarioAtual, "status", statusAnterior, salva.getStatus().name());
+        registrarAlteracao(salva, usuarioAtual, "prioridade", prioridadeAnterior, salva.getPrioridade().name());
+        registrarAlteracao(salva, usuarioAtual, "prazo",
+                prazoAnterior, salva.getPrazo() != null ? salva.getPrazo().toString() : null);
+        String responsavelNovo = salva.getResponsavel() != null ? salva.getResponsavel().getNome() : null;
+        registrarAlteracao(salva, usuarioAtual, "responsavel", responsavelAnterior, responsavelNovo);
+
         return paraResposta(salva);
     }
 
@@ -203,6 +233,7 @@ public class ServicoTarefa {
         exigirAdmin(usuarioAtual);
 
         Tarefa tarefa = buscarTarefaNoProjetoOuLancar(idProjeto, idTarefa);
+        repositorioHistoricoTarefa.deleteByTarefaId(idTarefa);
         repositorioTarefa.delete(tarefa);
     }
 
@@ -229,6 +260,42 @@ public class ServicoTarefa {
         resposta.setPorStatus(porStatus);
         resposta.setPorPrioridade(porPrioridade);
         return resposta;
+    }
+
+    @Transactional(readOnly = true)
+    public List<RespostaHistoricoTarefa> buscarHistorico(Long idProjeto, Long idTarefa, String emailUsuarioAtual) {
+        Usuario usuarioAtual = buscarUsuarioPorEmailOuLancar(emailUsuarioAtual);
+        exigirMembro(idProjeto, usuarioAtual.getId());
+        buscarTarefaNoProjetoOuLancar(idProjeto, idTarefa);
+        return repositorioHistoricoTarefa.findByTarefaIdOrderByAlteradoEmAsc(idTarefa)
+                .stream()
+                .map(this::paraRespostaHistorico)
+                .toList();
+    }
+
+    private void registrarAlteracao(Tarefa tarefa, Usuario autor, String campo, String anterior, String novo) {
+        if (!Objects.equals(anterior, novo)) {
+            HistoricoTarefa h = new HistoricoTarefa();
+            h.setTarefa(tarefa);
+            h.setAlteradoPor(autor);
+            h.setCampo(campo);
+            h.setValorAnterior(anterior);
+            h.setValorNovo(novo);
+            repositorioHistoricoTarefa.save(h);
+        }
+    }
+
+    private RespostaHistoricoTarefa paraRespostaHistorico(HistoricoTarefa h) {
+        RespostaHistoricoTarefa r = new RespostaHistoricoTarefa();
+        r.setId(h.getId());
+        r.setIdTarefa(h.getTarefa().getId());
+        r.setIdAutor(h.getAlteradoPor().getId());
+        r.setNomeAutor(h.getAlteradoPor().getNome());
+        r.setCampo(h.getCampo());
+        r.setValorAnterior(h.getValorAnterior());
+        r.setValorNovo(h.getValorNovo());
+        r.setAlteradoEm(h.getAlteradoEm());
+        return r;
     }
 
     private void exigirMembro(Long idProjeto, Long idUsuario) {

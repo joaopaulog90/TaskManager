@@ -38,6 +38,17 @@ export interface RespostaResumoTarefa {
   porPrioridade: Record<string, number>;
 }
 
+export interface RespostaHistoricoTarefa {
+  id: number;
+  idTarefa: number;
+  idAutor: number;
+  nomeAutor: string;
+  campo: string;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+  alteradoEm: string;
+}
+
 export interface RespostaPaginada<T> {
   conteudo: T[];
   pagina: number;

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { RespostaTarefa, RequisicaoTarefa, RequisicaoAtualizacaoTarefa, RespostaResumoTarefa, RespostaPaginada, StatusTarefa, PrioridadeTarefa } from '../models/task.model';
+import { RespostaTarefa, RequisicaoTarefa, RequisicaoAtualizacaoTarefa, RespostaResumoTarefa, RespostaHistoricoTarefa, RespostaPaginada, StatusTarefa, PrioridadeTarefa } from '../models/task.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -41,5 +41,9 @@ export class ServicoTarefa {
 
   resumo(idProjeto: number): Observable<RespostaResumoTarefa> {
     return this.http.get<RespostaResumoTarefa>(`${this.URL_API}/${idProjeto}/tasks/summary`);
+  }
+
+  historico(idProjeto: number, idTarefa: number): Observable<RespostaHistoricoTarefa[]> {
+    return this.http.get<RespostaHistoricoTarefa[]>(`${this.URL_API}/${idProjeto}/tasks/${idTarefa}/history`);
   }
 }

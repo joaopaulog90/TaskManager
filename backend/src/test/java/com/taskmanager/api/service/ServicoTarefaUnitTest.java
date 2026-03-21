@@ -9,6 +9,7 @@ import com.taskmanager.api.entity.Projeto;
 import com.taskmanager.api.entity.StatusTarefa;
 import com.taskmanager.api.entity.Tarefa;
 import com.taskmanager.api.entity.Usuario;
+import com.taskmanager.api.repository.RepositorioHistoricoTarefa;
 import com.taskmanager.api.repository.RepositorioMembroProjeto;
 import com.taskmanager.api.repository.RepositorioProjeto;
 import com.taskmanager.api.repository.RepositorioTarefa;
@@ -44,6 +45,9 @@ class ServicoTarefaUnitTest {
 
     @Mock
     private RepositorioUsuario repositorioUsuario;
+
+    @Mock
+    private RepositorioHistoricoTarefa repositorioHistoricoTarefa;
 
     @InjectMocks
     private ServicoTarefa servicoTarefa;

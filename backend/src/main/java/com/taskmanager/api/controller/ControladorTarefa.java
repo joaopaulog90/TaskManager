@@ -2,6 +2,7 @@ package com.taskmanager.api.controller;
 
 import com.taskmanager.api.dto.request.RequisicaoAtualizacaoTarefa;
 import com.taskmanager.api.dto.request.RequisicaoTarefa;
+import com.taskmanager.api.dto.response.RespostaHistoricoTarefa;
 import com.taskmanager.api.dto.response.RespostaPaginada;
 import com.taskmanager.api.dto.response.RespostaResumoTarefa;
 import com.taskmanager.api.dto.response.RespostaTarefa;
@@ -106,6 +107,15 @@ public class ControladorTarefa {
             @RequestBody RequisicaoAtualizacaoTarefa requisicao,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(servicoTarefa.atualizar(projectId, taskId, requisicao, userDetails.getUsername()));
+    }
+
+    @GetMapping("/{taskId}/history")
+    @Operation(summary = "Retorna o histórico de alterações de uma tarefa")
+    public ResponseEntity<List<RespostaHistoricoTarefa>> historico(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(servicoTarefa.buscarHistorico(projectId, taskId, userDetails.getUsername()));
     }
 
     @DeleteMapping("/{taskId}")

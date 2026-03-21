@@ -10,7 +10,7 @@ import { ServicoAutenticacao } from '../../core/services/auth.service';
 import { ServicoToast } from '../../core/services/toast.service';
 import { RespostaProjeto, RespostaMembro } from '../../core/models/project.model';
 import { RespostaUsuario } from '../../core/models/auth.model';
-import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } from '../../core/models/task.model';
+import { RespostaTarefa, RespostaHistoricoTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } from '../../core/models/task.model';
 
 @Component({
   selector: 'app-project-detail',
@@ -150,7 +150,10 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
                 <div *ngIf="tarefa.atualizadoEm !== tarefa.criadoEm" style="font-size:0.65rem;color:#bbb;">atualizado {{ tarefa.atualizadoEm | date:'dd/MM/yy HH:mm' }}</div>
               </td>
               <td style="padding:0.75rem 1rem;">
-                <button *ngIf="ehAdmin" (click)="deletarTarefa(tarefa)" style="padding:0.25rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Excluir</button>
+                <div style="display:flex;gap:0.25rem;">
+                  <button (click)="verHistorico(tarefa)" style="padding:0.25rem 0.5rem;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Histórico</button>
+                  <button *ngIf="ehAdmin" (click)="deletarTarefa(tarefa)" style="padding:0.25rem 0.5rem;background:#e53935;color:white;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;">Excluir</button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="tarefas.length === 0">
@@ -201,6 +204,29 @@ import { RespostaTarefa, StatusTarefa, PrioridadeTarefa, RespostaResumoTarefa } 
           {{ p + 1 }}
         </button>
       </div>
+
+      <!-- MODAL HISTÓRICO -->
+      <div *ngIf="historicoTarefa" (click)="fecharHistorico()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;">
+        <div (click)="$event.stopPropagation()" style="background:white;border-radius:12px;padding:1.5rem;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3 style="margin:0;">Histórico — {{ historicoTarefa.titulo }}</h3>
+            <button (click)="fecharHistorico()" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#666;">✕</button>
+          </div>
+          <div *ngIf="historico.length === 0" style="text-align:center;color:#999;padding:2rem;">Nenhum registro de alteração.</div>
+          <div *ngFor="let h of historico" style="border-bottom:1px solid #f0f0f0;padding:0.75rem 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:500;font-size:0.875rem;">{{ h.campo }}</span>
+              <span style="font-size:0.7rem;color:#999;">{{ h.alteradoEm | date:'dd/MM/yy HH:mm:ss' }}</span>
+            </div>
+            <div style="font-size:0.8rem;color:#555;margin-top:0.25rem;">
+              <span *ngIf="h.valorAnterior" style="background:#ffebee;padding:0.1rem 0.3rem;border-radius:3px;text-decoration:line-through;">{{ h.valorAnterior }}</span>
+              <span *ngIf="h.valorAnterior && h.valorNovo"> → </span>
+              <span *ngIf="h.valorNovo" style="background:#e8f5e9;padding:0.1rem 0.3rem;border-radius:3px;">{{ h.valorNovo }}</span>
+            </div>
+            <div style="font-size:0.7rem;color:#999;margin-top:0.25rem;">por {{ h.nomeAutor }}</div>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
@@ -220,6 +246,9 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   filtroPrioridade: PrioridadeTarefa | '' = '';
   termoBusca = '';
   temporizadorBusca: any;
+
+  historicoTarefa: RespostaTarefa | null = null;
+  historico: RespostaHistoricoTarefa[] = [];
 
   paginaAtual = 0;
   totalPaginas = 0;
@@ -265,7 +294,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
 
   private iniciarPolling(): void {
     this.verificarNovasAtribuicoes();
-    this.intervalPolling = setInterval(() => this.verificarNovasAtribuicoes(), 3000);
+    this.intervalPolling = setInterval(() => this.verificarNovasAtribuicoes(), 6000);
   }
 
   private verificarNovasAtribuicoes(): void {
@@ -485,6 +514,17 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       next: () => this.carregarMembros(),
       error: (err: any) => { this.erroMembro = err.error?.detail || 'Erro ao remover membro'; }
     });
+  }
+
+  verHistorico(tarefa: RespostaTarefa): void {
+    this.historicoTarefa = tarefa;
+    this.historico = [];
+    this.servicoTarefa.historico(this.idProjeto, tarefa.id).subscribe(lista => this.historico = lista);
+  }
+
+  fecharHistorico(): void {
+    this.historicoTarefa = null;
+    this.historico = [];
   }
 
   notificarSeAtribuidoAMim(tarefa: RespostaTarefa): void {
