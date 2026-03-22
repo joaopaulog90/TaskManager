@@ -104,7 +104,7 @@ public class ControladorTarefa {
     public ResponseEntity<RespostaTarefa> atualizar(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @RequestBody RequisicaoAtualizacaoTarefa requisicao,
+            @Valid @RequestBody RequisicaoAtualizacaoTarefa requisicao,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(servicoTarefa.atualizar(projectId, taskId, requisicao, userDetails.getUsername()));
     }

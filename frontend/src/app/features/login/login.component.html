@@ -1,0 +1,33 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <h2>{{ modoCadastro ? 'Criar conta' : 'TaskManager' }}</h2>
+
+    <div *ngIf="erro" class="alerta-erro">{{ erro }}</div>
+
+    <div *ngIf="modoCadastro" class="form-group">
+      <label>Nome</label>
+      <input [(ngModel)]="nome" type="text" placeholder="Seu nome" class="input" />
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input [(ngModel)]="email" type="email" placeholder="seu@email.com" class="input" />
+    </div>
+
+    <div class="form-group mb-lg">
+      <label>Senha</label>
+      <input [(ngModel)]="senha" type="password" placeholder="••••••" class="input" />
+    </div>
+
+    <button (click)="enviar()" [disabled]="carregando" class="btn-submit">
+      {{ carregando ? 'Aguarde...' : (modoCadastro ? 'Criar conta' : 'Entrar') }}
+    </button>
+
+    <p class="toggle-link">
+      {{ modoCadastro ? 'Já tem conta?' : 'Não tem conta?' }}
+      <a href="#" (click)="alternarModo($event)">
+        {{ modoCadastro ? 'Entrar' : 'Criar conta' }}
+      </a>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,6 @@
+<div *ngIf="resumo" class="resumo-container">
+  <div *ngFor="let entrada of entradas()" class="resumo-card">
+    <div class="resumo-valor">{{ entrada.count }}</div>
+    <div class="resumo-label">{{ entrada.label }}</div>
+  </div>
+</div>

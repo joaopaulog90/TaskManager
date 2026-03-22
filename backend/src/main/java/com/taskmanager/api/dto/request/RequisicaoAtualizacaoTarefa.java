@@ -2,13 +2,16 @@ package com.taskmanager.api.dto.request;
 
 import com.taskmanager.api.entity.PrioridadeTarefa;
 import com.taskmanager.api.entity.StatusTarefa;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
 public class RequisicaoAtualizacaoTarefa {
 
+    @Size(min = 1, max = 255, message = "Título deve ter entre 1 e 255 caracteres")
     private String titulo;
 
+    @Size(max = 5000, message = "Descrição deve ter no máximo 5000 caracteres")
     private String descricao;
 
     private StatusTarefa status;

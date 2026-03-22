@@ -1,0 +1,21 @@
+<div (click)="fechar.emit()" class="modal-overlay">
+  <div (click)="$event.stopPropagation()" class="modal-content">
+    <div class="modal-header">
+      <h3>Histórico — {{ tituloTarefa }}</h3>
+      <button (click)="fechar.emit()" class="btn-fechar">✕</button>
+    </div>
+    <div *ngIf="historico.length === 0" class="vazio">Nenhum registro de alteração.</div>
+    <div *ngFor="let h of historico" class="historico-item">
+      <div class="historico-item-header">
+        <span class="campo-nome">{{ h.campo }}</span>
+        <span class="campo-data">{{ h.alteradoEm | date:'dd/MM/yy HH:mm:ss' }}</span>
+      </div>
+      <div class="valores">
+        <span *ngIf="h.valorAnterior" class="valor-anterior">{{ h.valorAnterior }}</span>
+        <span *ngIf="h.valorAnterior && h.valorNovo"> → </span>
+        <span *ngIf="h.valorNovo" class="valor-novo">{{ h.valorNovo }}</span>
+      </div>
+      <div class="autor">por {{ h.nomeAutor }}</div>
+    </div>
+  </div>
+</div>

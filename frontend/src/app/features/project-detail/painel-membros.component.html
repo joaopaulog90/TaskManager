@@ -1,0 +1,30 @@
+<div class="membros-card">
+  <h3>Membros do Projeto</h3>
+  <div *ngIf="erro" class="erro-msg">{{ erro }}</div>
+  <div class="colunas">
+    <div class="coluna">
+      <h4 class="verde">No projeto</h4>
+      <div *ngFor="let membro of membros" class="membro-row">
+        <div>
+          <span class="membro-nome">{{ membro.nomeUsuario }}</span>
+          <span class="membro-email">{{ membro.emailUsuario }}</span>
+          <span class="membro-badge" [style.background]="membro.perfil === 'ADMIN' ? '#1976d2' : '#757575'">{{ membro.perfil }}</span>
+        </div>
+        <button *ngIf="membro.idUsuario !== idProprietario" (click)="remover.emit(membro.idUsuario)" class="btn-remover">Remover</button>
+        <span *ngIf="membro.idUsuario === idProprietario" class="label-dono">dono</span>
+      </div>
+      <div *ngIf="membros.length === 0" class="vazio">Nenhum membro.</div>
+    </div>
+    <div class="coluna">
+      <h4 class="azul">Disponíveis para adicionar</h4>
+      <div *ngFor="let usuario of disponiveis" class="membro-row">
+        <div>
+          <span class="membro-nome">{{ usuario.nome }}</span>
+          <span class="membro-email">{{ usuario.email }}</span>
+        </div>
+        <button (click)="adicionar.emit(usuario.id)" class="btn-adicionar">Adicionar</button>
+      </div>
+      <div *ngIf="disponiveis.length === 0" class="vazio">Todos os usuários já são membros.</div>
+    </div>
+  </div>
+</div>

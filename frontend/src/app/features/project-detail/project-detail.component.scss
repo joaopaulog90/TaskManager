@@ -1,0 +1,89 @@
+.page-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+.btn { padding: 0.5rem 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-voltar { background: #666; }
+.btn-primary { background: #1976d2; }
+
+.projeto-nome { margin: 0; }
+.projeto-desc { color: #666; font-size: 0.9rem; }
+
+.erro-global { background: #fee; color: #c00; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.875rem; }
+
+// Filtros
+.filtros { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.filtro-select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+.filtro-busca { flex: 1; min-width: 180px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+
+// Tabela
+.table-scroll { overflow-x: auto; }
+.table-card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+.table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.table th { padding: 0.75rem 1rem; text-align: left; font-size: 0.875rem; color: #666; }
+.table thead tr { background: #f5f5f5; }
+.table tbody tr { border-top: 1px solid #f0f0f0; }
+.table td { padding: 0.75rem 1rem; }
+.tarefa-titulo { font-weight: 500; }
+.tarefa-desc { font-size: 0.75rem; color: #999; }
+
+.status-select {
+  border: none; border-radius: 12px; padding: 0.25rem 0.5rem;
+  font-size: 0.75rem; color: white; cursor: pointer; font-weight: 600;
+}
+
+.badge {
+  border-radius: 12px; padding: 0.25rem 0.5rem;
+  font-size: 0.75rem; color: white; font-weight: 600;
+}
+
+.responsavel-select { padding: 0.25rem 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
+.prazo-text { font-size: 0.875rem; color: #555; }
+.data-criacao { font-size: 0.75rem; color: #999; }
+.data-atualizacao { font-size: 0.65rem; color: #bbb; }
+
+.acoes { display: flex; gap: 0.25rem; }
+.btn-historico { padding: 0.25rem 0.5rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.btn-excluir { padding: 0.25rem 0.5rem; background: #e53935; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.vazio-msg { padding: 2rem; text-align: center; color: #666; }
+
+// Board
+.board-container { display: flex; gap: 1rem; min-height: 400px; }
+.board-coluna { flex: 1; min-width: 250px; }
+.board-coluna-header { padding: 0.75rem 1rem; border-radius: 8px 8px 0 0; color: white; font-weight: 600; text-align: center; }
+.board-coluna-body { background: #f5f5f5; border-radius: 0 0 8px 8px; padding: 0.5rem; min-height: 300px; }
+
+.board-card {
+  background: white; padding: 0.75rem; border-radius: 6px;
+  margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); cursor: grab;
+}
+.board-card-titulo { font-weight: 500; font-size: 0.875rem; }
+.board-card-desc { font-size: 0.75rem; color: #999; margin-top: 0.25rem; }
+.board-card-meta { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; align-items: center; }
+.board-badge { border-radius: 12px; padding: 0.15rem 0.4rem; font-size: 0.65rem; color: white; font-weight: 600; }
+.board-responsavel {
+  padding: 0.15rem 0.3rem; border: 1px solid #ddd; border-radius: 4px;
+  font-size: 0.7rem; cursor: pointer; max-width: 120px;
+}
+.board-prazo { font-size: 0.65rem; color: #999; }
+.board-card-datas { margin-top: 0.4rem; }
+.board-data-criacao { font-size: 0.65rem; color: #999; }
+.board-data-atualizacao { font-size: 0.6rem; color: #bbb; }
+.board-card-acoes { display: flex; gap: 0.25rem; margin-top: 0.5rem; }
+.btn-board-historico { padding: 0.15rem 0.4rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.65rem; }
+.btn-board-excluir { padding: 0.15rem 0.4rem; background: #e53935; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.65rem; }
+.board-vazio { text-align: center; color: #bbb; padding: 2rem; font-size: 0.875rem; }
+
+// Paginação
+.paginacao { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+.btn-pagina { padding: 0.25rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+
+@media (max-width: 768px) {
+  .page-container { padding: 1rem; }
+  .board-container { flex-direction: column; }
+  .board-coluna { min-width: 0 !important; }
+}
+
+@media (max-width: 480px) {
+  .page-container { padding: 0.75rem; }
+}

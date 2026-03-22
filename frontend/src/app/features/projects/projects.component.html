@@ -1,0 +1,93 @@
+<div class="projects-page">
+  <div class="projects-header">
+    <h1>Meus Projetos</h1>
+    <div class="header-actions">
+      <button *ngIf="ehAdmin" (click)="alternarAba()"
+        [style.background]="abaAtiva === 'usuarios' ? '#1976d2' : '#757575'"
+        class="btn">
+        {{ abaAtiva === 'usuarios' ? 'Projetos' : 'Usuários' }}
+      </button>
+      <button (click)="sair()" class="btn btn-danger">Sair</button>
+    </div>
+  </div>
+
+  <!-- ABA PROJETOS -->
+  <ng-container *ngIf="abaAtiva === 'projetos'">
+    <div *ngIf="ehAdmin" class="card">
+      <h3>Novo Projeto</h3>
+      <div class="new-project-form">
+        <div class="form-field">
+          <input [(ngModel)]="novoNome" placeholder="Nome do projeto" class="input" />
+        </div>
+        <div class="form-field-lg">
+          <input [(ngModel)]="novaDescricao" placeholder="Descrição (opcional)" class="input" />
+        </div>
+        <button (click)="criar()" [disabled]="!novoNome.trim()" class="btn-criar">Criar</button>
+      </div>
+      <div *ngIf="erroAoCriar" class="erro-msg">{{ erroAoCriar }}</div>
+    </div>
+
+    <div *ngIf="carregando" class="carregando">Carregando...</div>
+
+    <div *ngFor="let projeto of projetos" class="projeto-card">
+      <div (click)="abrir(projeto)" class="projeto-info">
+        <h3>{{ projeto.nome }}</h3>
+        <p>{{ projeto.descricao }}</p>
+        <small>{{ projeto.quantidadeMembros }} membro(s) · criado por {{ projeto.nomeProprietario }}</small>
+      </div>
+      <button *ngIf="ehAdmin" (click)="deletar(projeto.id)" class="btn-excluir">Excluir</button>
+    </div>
+
+    <div *ngIf="erroAoDeletar" class="erro-msg">{{ erroAoDeletar }}</div>
+
+    <div *ngIf="!carregando && projetos.length === 0" class="vazio">
+      {{ ehAdmin ? 'Nenhum projeto encontrado. Crie seu primeiro projeto acima.' : 'Você ainda não faz parte de nenhum projeto.' }}
+    </div>
+  </ng-container>
+
+  <!-- ABA USUÁRIOS (só ADMIN) -->
+  <ng-container *ngIf="abaAtiva === 'usuarios'">
+    <div class="card">
+      <h3>Gerenciamento de Usuários</h3>
+
+      <div *ngIf="erroUsuario" class="alerta-erro">{{ erroUsuario }}</div>
+      <div *ngIf="sucessoUsuario" class="alerta-sucesso">{{ sucessoUsuario }}</div>
+
+      <div class="user-table-wrap">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Perfil</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let usuario of usuarios">
+              <td class="user-nome">{{ usuario.nome }}</td>
+              <td class="user-email">{{ usuario.email }}</td>
+              <td>
+                <span [style.background]="usuario.perfil === 'ADMIN' ? '#1976d2' : '#757575'" class="user-badge">
+                  {{ usuario.perfil }}
+                </span>
+              </td>
+              <td>
+                <button *ngIf="usuario.id !== idUsuarioAtual"
+                  (click)="alternarPerfil(usuario)"
+                  [style.background]="usuario.perfil === 'ADMIN' ? '#e53935' : '#388e3c'"
+                  class="btn-perfil">
+                  {{ usuario.perfil === 'ADMIN' ? 'Rebaixar para MEMBER' : 'Promover para ADMIN' }}
+                </button>
+                <span *ngIf="usuario.id === idUsuarioAtual" class="label-voce">(você)</span>
+              </td>
+            </tr>
+            <tr *ngIf="usuarios.length === 0">
+              <td colspan="4" class="vazio">Nenhum usuário encontrado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

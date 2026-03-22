@@ -1,0 +1,21 @@
+<div class="form-card">
+  <h3>Nova Tarefa</h3>
+  <div class="form-row">
+    <input [(ngModel)]="titulo" placeholder="Título" class="input-text" />
+    <input [(ngModel)]="descricao" placeholder="Descrição (opcional)" class="input-text" />
+  </div>
+  <div class="form-row mt">
+    <select [(ngModel)]="prioridade" class="input-select">
+      <option value="LOW">LOW</option><option value="MEDIUM">MEDIUM</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option>
+    </select>
+    <select [(ngModel)]="idResponsavel" class="input-select">
+      <option [ngValue]="null">Sem responsável</option>
+      <option *ngFor="let membro of membros" [ngValue]="membro.idUsuario">{{ membro.nomeUsuario }}</option>
+    </select>
+    <div class="prazo-group">
+      <label>Prazo:</label>
+      <input [(ngModel)]="prazo" type="date" />
+    </div>
+    <button (click)="submeter()" [disabled]="!titulo.trim()" class="btn-criar">Criar</button>
+  </div>
+</div>

@@ -1,0 +1,154 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <button (click)="voltar()" class="btn btn-voltar">← Projetos</button>
+    <h1 class="projeto-nome">{{ projeto?.nome }}</h1>
+    <span class="projeto-desc">{{ projeto?.descricao }}</span>
+    <div class="spacer"></div>
+    <button (click)="visao = visao === 'lista' ? 'board' : 'lista'" class="btn btn-primary">
+      {{ visao === 'lista' ? 'Board' : 'Lista' }}
+    </button>
+    <button *ngIf="ehAdmin" (click)="alternarMembros()"
+      [style.background]="mostrarMembros ? '#1976d2' : '#757575'"
+      class="btn">
+      Membros ({{ membros.length }})
+    </button>
+  </div>
+
+  <app-painel-membros *ngIf="mostrarMembros"
+    [membros]="membros"
+    [disponiveis]="usuariosDisponiveis()"
+    [idProprietario]="projeto?.idProprietario"
+    [erro]="erroMembro"
+    (adicionar)="adicionarMembroPorId($event)"
+    (remover)="removerMembro($event)">
+  </app-painel-membros>
+
+  <app-resumo-cards [resumo]="resumo"></app-resumo-cards>
+
+  <div *ngIf="erroGlobal" class="erro-global">{{ erroGlobal }}</div>
+
+  <app-formulario-tarefa
+    [membros]="membros"
+    (criar)="criarTarefa($event)">
+  </app-formulario-tarefa>
+
+  <div class="filtros">
+    <select [(ngModel)]="filtroStatus" (ngModelChange)="carregarTarefas()" class="filtro-select">
+      <option value="">Todos os status</option><option value="TODO">TODO</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option>
+    </select>
+    <select [(ngModel)]="filtroPrioridade" (ngModelChange)="carregarTarefas()" class="filtro-select">
+      <option value="">Todas as prioridades</option><option value="LOW">LOW</option><option value="MEDIUM">MEDIUM</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option>
+    </select>
+    <input [(ngModel)]="termoBusca" (input)="aoBuscar()" placeholder="Buscar tarefas..." class="filtro-busca" />
+  </div>
+
+  <!-- VISÃO LISTA -->
+  <div *ngIf="visao === 'lista'" class="table-scroll table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Status</th>
+          <th>Prioridade</th>
+          <th>Responsável</th>
+          <th>Prazo</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tarefa of tarefas">
+          <td>
+            <div class="tarefa-titulo">{{ tarefa.titulo }}</div>
+            <div *ngIf="tarefa.descricao" class="tarefa-desc">{{ tarefa.descricao }}</div>
+          </td>
+          <td>
+            <select [ngModel]="tarefa.status" (ngModelChange)="alterarStatus(tarefa, $event)"
+              [style.background]="corStatus(tarefa.status)" class="status-select">
+              <option value="TODO">TODO</option><option value="IN_PROGRESS">IN_PROGRESS</option><option value="DONE">DONE</option>
+            </select>
+          </td>
+          <td>
+            <span [style.background]="corPrioridade(tarefa.prioridade)" class="badge">{{ tarefa.prioridade }}</span>
+          </td>
+          <td>
+            <select [ngModel]="tarefa.idResponsavel" (ngModelChange)="alterarResponsavel(tarefa, $event)" class="responsavel-select">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let membro of membros" [ngValue]="membro.idUsuario">{{ membro.nomeUsuario }}</option>
+            </select>
+          </td>
+          <td class="prazo-text">{{ tarefa.prazo ? (tarefa.prazo | date:'dd/MM/yyyy') : '—' }}</td>
+          <td>
+            <div class="data-criacao">{{ tarefa.criadoEm | date:'dd/MM/yy HH:mm' }}</div>
+            <div *ngIf="tarefa.atualizadoEm !== tarefa.criadoEm" class="data-atualizacao">atualizado {{ tarefa.atualizadoEm | date:'dd/MM/yy HH:mm' }}</div>
+          </td>
+          <td>
+            <div class="acoes">
+              <button (click)="verHistorico(tarefa)" class="btn-historico">Histórico</button>
+              <button *ngIf="ehAdmin" (click)="deletarTarefa(tarefa)" class="btn-excluir">Excluir</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="tarefas.length === 0">
+          <td colspan="7" class="vazio-msg">Nenhuma tarefa encontrada.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- VISÃO BOARD -->
+  <div *ngIf="visao === 'board'" class="board-container" cdkDropListGroup>
+    <div *ngFor="let coluna of colunas" class="board-coluna">
+      <div [style.background]="corStatus(coluna.status)" class="board-coluna-header">
+        {{ coluna.label }} ({{ coluna.tarefas.length }})
+      </div>
+      <div
+        cdkDropList
+        [cdkDropListData]="coluna.tarefas"
+        [id]="coluna.status"
+        [cdkDropListConnectedTo]="statusList"
+        (cdkDropListDropped)="aoSoltar($event, coluna.status)"
+        class="board-coluna-body">
+        <div *ngFor="let tarefa of coluna.tarefas" cdkDrag class="board-card">
+          <div class="board-card-titulo">{{ tarefa.titulo }}</div>
+          <div *ngIf="tarefa.descricao" class="board-card-desc">{{ tarefa.descricao }}</div>
+          <div class="board-card-meta">
+            <span [style.background]="corPrioridade(tarefa.prioridade)" class="board-badge">{{ tarefa.prioridade }}</span>
+            <select [ngModel]="tarefa.idResponsavel" (ngModelChange)="alterarResponsavel(tarefa, $event)" (mousedown)="$event.stopPropagation()" class="board-responsavel">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let membro of membros" [ngValue]="membro.idUsuario">{{ membro.nomeUsuario }}</option>
+            </select>
+            <span *ngIf="tarefa.prazo" class="board-prazo">Prazo: {{ tarefa.prazo | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="board-card-datas">
+            <span class="board-data-criacao">{{ tarefa.criadoEm | date:'dd/MM/yy HH:mm' }}</span>
+            <span *ngIf="tarefa.atualizadoEm !== tarefa.criadoEm" class="board-data-atualizacao">· atualizado {{ tarefa.atualizadoEm | date:'dd/MM/yy HH:mm' }}</span>
+          </div>
+          <div class="board-card-acoes">
+            <button (click)="verHistorico(tarefa)" (mousedown)="$event.stopPropagation()" class="btn-board-historico">Histórico</button>
+            <button *ngIf="ehAdmin" (click)="deletarTarefa(tarefa)" (mousedown)="$event.stopPropagation()" class="btn-board-excluir">Excluir</button>
+          </div>
+        </div>
+        <div *ngIf="coluna.tarefas.length === 0" class="board-vazio">
+          Arraste tarefas aqui
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="visao === 'lista' && totalPaginas > 1" class="paginacao">
+    <button *ngFor="let p of numerosPagina()" (click)="irParaPagina(p)"
+      [style.background]="p === paginaAtual ? '#1976d2' : '#fff'"
+      [style.color]="p === paginaAtual ? 'white' : '#333'"
+      class="btn-pagina">
+      {{ p + 1 }}
+    </button>
+  </div>
+
+  <app-historico-tarefa-modal *ngIf="historicoTarefa"
+    [tituloTarefa]="historicoTarefa.titulo"
+    [historico]="historico"
+    (fechar)="fecharHistorico()">
+  </app-historico-tarefa-modal>
+</div>
