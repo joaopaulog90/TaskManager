@@ -23,6 +23,13 @@ cp .env.example .env
 docker compose up -d
 ```
 
+no Windows usar o comando 
+
+```bash
+copy .env.example .env
+docker compose up -d
+```
+
 Os três serviços sobem automaticamente:
 - **PostgreSQL** na porta 5432
 - **Backend** na porta 8080 
